@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { OrderModal } from './OrderModal';
 
 interface OrderItem {
   id: string;
@@ -24,11 +25,27 @@ interface Order {
   notes: string;
 }
 
-export const OrderManagement = () => {
+interface MenuItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  description: string;
+  tags: string[];
+  available: boolean;
+  ingredients: string[];
+}
+
+interface OrderManagementProps {
+  menuItems: MenuItem[];
+}
+
+export const OrderManagement = ({ menuItems }: OrderManagementProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
-  const [orders] = useState<Order[]>([
+  const [orders, setOrders] = useState<Order[]>([
     {
       id: 'ORD-001',
       customerName: 'John Doe',
@@ -65,6 +82,20 @@ export const OrderManagement = () => {
       notes: ''
     }
   ]);
+
+  const handleCreateOrder = (orderData: any) => {
+    const newOrder = {
+      ...orderData,
+      id: `ORD-${String(orders.length + 1).padStart(3, '0')}`
+    };
+    setOrders([newOrder, ...orders]);
+  };
+
+  const updateOrderStatus = (orderId: string, newStatus: 'placed' | 'preparing' | 'ready' | 'delivered') => {
+    setOrders(orders.map(order =>
+      order.id === orderId ? { ...order, status: newStatus } : order
+    ));
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -139,7 +170,10 @@ export const OrderManagement = () => {
           <option value="ready">Ready</option>
           <option value="delivered">Delivered</option>
         </select>
-        <Button className="bg-orange-500 hover:bg-orange-600">
+        <Button 
+          onClick={() => setIsOrderModalOpen(true)}
+          className="bg-orange-500 hover:bg-orange-600"
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Order
         </Button>
@@ -192,17 +226,29 @@ export const OrderManagement = () => {
                 <span className="text-lg font-bold">Total: ${order.total.toFixed(2)}</span>
                 <div className="space-x-2">
                   {order.status === 'placed' && (
-                    <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
+                    <Button 
+                      size="sm" 
+                      className="bg-orange-500 hover:bg-orange-600"
+                      onClick={() => updateOrderStatus(order.id, 'preparing')}
+                    >
                       Start Preparing
                     </Button>
                   )}
                   {order.status === 'preparing' && (
-                    <Button size="sm" className="bg-green-500 hover:bg-green-600">
+                    <Button 
+                      size="sm" 
+                      className="bg-green-500 hover:bg-green-600"
+                      onClick={() => updateOrderStatus(order.id, 'ready')}
+                    >
                       Mark Ready
                     </Button>
                   )}
                   {order.status === 'ready' && (
-                    <Button size="sm" className="bg-blue-500 hover:bg-blue-600">
+                    <Button 
+                      size="sm" 
+                      className="bg-blue-500 hover:bg-blue-600"
+                      onClick={() => updateOrderStatus(order.id, 'delivered')}
+                    >
                       Mark Delivered
                     </Button>
                   )}
@@ -212,6 +258,13 @@ export const OrderManagement = () => {
           </Card>
         ))}
       </div>
+
+      <OrderModal
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        onSave={handleCreateOrder}
+        menuItems={menuItems}
+      />
     </div>
   );
 };

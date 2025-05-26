@@ -1,11 +1,12 @@
 
 import { useState } from 'react';
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MenuItemModal } from './MenuItemModal';
+import { useAuth } from '../contexts/AuthContext';
 
 interface MenuItem {
   id: string;
@@ -18,44 +19,17 @@ interface MenuItem {
   ingredients: string[];
 }
 
-export const MenuManagement = () => {
+interface MenuManagementProps {
+  menuItems: MenuItem[];
+  setMenuItems: (items: MenuItem[]) => void;
+}
+
+export const MenuManagement = ({ menuItems, setMenuItems }: MenuManagementProps) => {
+  const { isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    {
-      id: '1',
-      name: 'Margherita Pizza',
-      category: 'Pizzas',
-      price: 12.99,
-      description: 'Fresh mozzarella, tomato sauce, and basil',
-      tags: ['vegetarian', 'popular'],
-      available: true,
-      ingredients: ['mozzarella', 'tomato sauce', 'basil', 'pizza dough']
-    },
-    {
-      id: '2',
-      name: 'Chicken Caesar Salad',
-      category: 'Salads',
-      price: 9.99,
-      description: 'Grilled chicken, romaine lettuce, parmesan, croutons',
-      tags: ['healthy', 'protein'],
-      available: true,
-      ingredients: ['chicken breast', 'romaine lettuce', 'parmesan', 'croutons', 'caesar dressing']
-    },
-    {
-      id: '3',
-      name: 'Vegan Buddha Bowl',
-      category: 'Bowls',
-      price: 11.99,
-      description: 'Quinoa, roasted vegetables, tahini dressing',
-      tags: ['vegan', 'healthy', 'gluten-free'],
-      available: false,
-      ingredients: ['quinoa', 'sweet potato', 'broccoli', 'chickpeas', 'tahini']
-    }
-  ]);
 
   const categories = ['all', ...Array.from(new Set(menuItems.map(item => item.category)))];
 
@@ -76,15 +50,18 @@ export const MenuManagement = () => {
   };
 
   const handleDeleteItem = (id: string) => {
+    if (!isAdmin) return;
     setMenuItems(menuItems.filter(item => item.id !== id));
   };
 
   const openEditModal = (item: MenuItem) => {
+    if (!isAdmin) return;
     setEditingItem(item);
     setIsModalOpen(true);
   };
 
   const openAddModal = () => {
+    if (!isAdmin) return;
     setEditingItem(null);
     setIsModalOpen(true);
   };
@@ -112,10 +89,17 @@ export const MenuManagement = () => {
             </option>
           ))}
         </select>
-        <Button onClick={openAddModal} className="bg-orange-500 hover:bg-orange-600">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Item
-        </Button>
+        {isAdmin ? (
+          <Button onClick={openAddModal} className="bg-orange-500 hover:bg-orange-600">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Item
+          </Button>
+        ) : (
+          <Button disabled className="bg-gray-300 cursor-not-allowed">
+            <Lock className="h-4 w-4 mr-2" />
+            Admin Only
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -124,23 +108,25 @@ export const MenuManagement = () => {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg">{item.name}</CardTitle>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditModal(item)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteItem(item.id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {isAdmin && (
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditModal(item)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -166,12 +152,14 @@ export const MenuManagement = () => {
         ))}
       </div>
 
-      <MenuItemModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={editingItem ? handleEditItem : handleAddItem}
-        item={editingItem}
-      />
+      {isAdmin && (
+        <MenuItemModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={editingItem ? handleEditItem : handleAddItem}
+          item={editingItem}
+        />
+      )}
     </div>
   );
 };

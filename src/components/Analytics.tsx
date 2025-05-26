@@ -1,8 +1,26 @@
-
-import { BarChart3, TrendingUp, DollarSign, Clock } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Clock, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Analytics = () => {
+  const { isAdmin } = useAuth();
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="pt-6">
+            <Lock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Restricted</h3>
+            <p className="text-gray-600">
+              Analytics are only available to admin users. Please contact your administrator for access.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const stats = [
     {
       title: 'Daily Revenue',
